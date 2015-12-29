@@ -1,0 +1,7 @@
+#remove Release folders from git repo
+/AVR/Release
+AVR/.settings
+
+#exclude project files
+*.cproject
+*.project
