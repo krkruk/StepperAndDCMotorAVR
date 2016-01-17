@@ -32,6 +32,7 @@ MainApplication::MainApplication() :
 	builtinLed.set();
 	DCMotor::configurePWM();
 	millis_init();
+	stepperRight.setTimeInterval(10);
 }
 void MainApplication::exec1000Ms()
 {
@@ -45,24 +46,30 @@ void MainApplication::exec1000Ms()
 }
 void MainApplication::exec100Ms()
 {
-//	if(isElapsed100Ms())
+	if(isElapsed100Ms())
 	{
 		/*
-		     * s1 - stepper 1, position in steps
-		     * s2 - stepper 2, position in steps
-		     * sr1 - stepper 1 reset position [0..1],
-		     * sr2 - stepper 2 reset position [0..1],
-		     * sm1 - stepper 1, mode: 0 - full step, 1 - half step
-		     * sm2 - stepper 2, mode: 0 - full step, 1 - half step
-		     * p1 - dc motor 1, pwm [0..100]
-		     * d1 - dc motor 1, direction [0..1]; 0 - clockwise, 1, counterclockwise
-		     * p2 - dc motor 2, pwm [0..100]
-		     * d2 - dc motor 2, direction [0..1]
+		 * s1 - stepper 1, position in steps
+		 * s2 - stepper 2, position in steps
+		 * sr1 - stepper 1 reset position [0..1],
+		 * sr2 - stepper 2 reset position [0..1],
+		 * sm1 - stepper 1, mode: 0 - full step, 1 - half step
+		 * sm2 - stepper 2, mode: 0 - full step, 1 - half step
+		 * st1 - stepper1, time interval in ms
+		 * st2 - stepper2, time interval in ms
+		 * p1 - dc motor 1, pwm [0..100]
+		 * d1 - dc motor 1, direction [0..1]; 0 - clockwise, 1, counterclockwise
+		 * p2 - dc motor 2, pwm [0..100]
+		 * d2 - dc motor 2, direction [0..1]
+		 * *1 - left
+		 * *2 - right
 		 */
 		auto s1 = stepperLeft.currentStepperPosition();
 		auto s2 = stepperRight.currentStepperPosition();
-		auto sm1 = stepperLeft.stepsAvailable() / 4 - 1;
-		auto sm2 = stepperRight.stepsAvailable() / 4 - 1;
+//		auto sm1 = stepperLeft.stepsAvailable() / 4 - 1;
+//		auto sm2 = stepperRight.stepsAvailable() / 4 - 1;
+//		auto st1 = stepperLeft.getTimeInterval();
+//		auto st2 = stepperRight.getTimeInterval();
 		uint8_t p1 = motorLeft.getPWM();
 		uint8_t p2 = motorRight.getPWM();
 		auto d1 = motorLeft.getDirection();
@@ -71,9 +78,9 @@ void MainApplication::exec100Ms()
 		constexpr uint8_t BUFFER_SIZE = 200;
 		char buffer[BUFFER_SIZE];
 		memset(buffer, '\0', BUFFER_SIZE);
-		auto n = sprintf(buffer, R"({"s1": %d, "s2": %d, "sm1": %d, "sm2": %d, "p1": %d, "p2": %d, "d1": %d, "d2": %d})",
-				s1, s2, sm1, sm2, p1, p2, d1, d2);
 
+		sprintf(buffer, "{\"s1\": %ld, \"s2\": %ld, \"p1\": %d, \"p2\": %d, \"d1\": %d, \"d2\": %d}\r\n",
+				s1, s2, p1, p2, d1, d2);
 		uart.send(buffer);
 	}
 }
@@ -168,6 +175,28 @@ void MainApplication::parseStepper2Mode(const char* jsonString, jsmntok_t* t,
 	}
 }
 
+void MainApplication::parseStepper1TimeInterval(const char* jsonString,
+		jsmntok_t* t, int* i)
+{
+	if (jsoneq(jsonString, &t[*i], "st1"))
+	{
+		readToBuffer(jsonString, t, i);
+		auto st1 = atol(inputBuffer);
+		stepperLeft.setTimeInterval(st1);
+	}
+}
+
+void MainApplication::parseStepper2TimeInterval(const char* jsonString,
+		jsmntok_t* t, int* i)
+{
+	if (jsoneq(jsonString, &t[*i], "st2"))
+	{
+		readToBuffer(jsonString, t, i);
+		auto st2 = atol(inputBuffer);
+		stepperRight.setTimeInterval(st2);
+	}
+}
+
 void MainApplication::parseMotor1PWM(const char* jsonString, jsmntok_t* t,
 		int* i)
 {
@@ -175,6 +204,11 @@ void MainApplication::parseMotor1PWM(const char* jsonString, jsmntok_t* t,
 	{
 		readToBuffer(jsonString, t, i);
 		auto p1 = atoi(inputBuffer);
+		if(p1 == 0)
+		{
+			motorLeft.stop();
+			return;
+		}
 		motorLeft.setPWM(p1);
 	}
 }
@@ -186,6 +220,11 @@ void MainApplication::parseMotor2PWM(const char* jsonString, jsmntok_t* t,
 	{
 		readToBuffer(jsonString, t, i);
 		auto p2 = atoi(inputBuffer);
+		if(p2 == 0)
+		{
+			motorRight.stop();
+			return;
+		}
 		motorRight.setPWM(p2);
 	}
 }
@@ -262,12 +301,14 @@ void MainApplication::parseUART()
 	}
 }
 
+
+
 uint8_t MainApplication::exec()
 {
 	while(1)
 	{
 		exec1000Ms();
-//		exec100Ms();
+		exec100Ms();
 		exec50Ms();
 
 		stepperLeft.stepUntil();

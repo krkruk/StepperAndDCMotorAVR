@@ -273,11 +273,34 @@ void StepperMotor::step(int16_t steps)
 	 * In order to apply these changes stepUntil() function
 	 * must be called in the main event loop of the program.
 	 */
-	desiredDirection = DIRECTION::CLOCKWISE;
-	if(steps < 0)
-		desiredDirection = DIRECTION::COUNTERCLOCKWISE;
+//	desiredDirection = DIRECTION::CLOCKWISE;
+//	if(steps < 0)
+//		desiredDirection = DIRECTION::COUNTERCLOCKWISE;
+//
+////	desiredPosition = currentPosition + steps;
+//	desiredPosition = steps;
 
-	desiredPosition = currentPosition + steps;
+	uint8_t isNegativeSteps = steps < 0;
+	uint8_t isNegativeDesiredPos = desiredPosition < 0;
+	desiredDirection = isNegativeSteps ? DIRECTION::COUNTERCLOCKWISE : DIRECTION::CLOCKWISE;
+
+	if(isNegativeSteps && isNegativeDesiredPos
+			&& steps > desiredPosition) {
+		desiredPosition = desiredPosition + abs(desiredPosition - steps);
+		desiredDirection = DIRECTION::CLOCKWISE;
+		return;
+	}
+	else {
+		if(!isNegativeSteps && !isNegativeDesiredPos
+			&& steps < desiredPosition)
+		{
+			desiredPosition = desiredPosition - abs(desiredPosition - steps);
+			desiredDirection = DIRECTION::COUNTERCLOCKWISE;
+			return;
+		}
+	}
+	desiredPosition = steps;
+
 }
 
 void StepperMotor::stepUntil()
