@@ -293,6 +293,8 @@ void MainApplication::parseUART()
 			parseStepper2Reset(jsonString, t, &i);
 			parseStepper1Mode(jsonString, t, &i);
 			parseStepper2Mode(jsonString, t, &i);
+			parseStepper1TimeInterval(jsonString, t, &i);
+			parseStepper2TimeInterval(jsonString, t, &i);
 			parseMotor1PWM(jsonString, t, &i);
 			parseMotor2PWM(jsonString, t, &i);
 			parseMotor1Direction(jsonString, t, &i);
