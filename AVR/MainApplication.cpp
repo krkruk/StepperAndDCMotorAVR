@@ -6,6 +6,8 @@
  */
 
 #include "MainApplication.h"
+MainApplication app;
+
 
 MainApplication::MainApplication() :
 	stepperLeft(
@@ -29,10 +31,12 @@ MainApplication::MainApplication() :
 	builtinLed(
 			Pin(DDRB, PORTB, PB5))
 {
+	wdt_disable();
 	builtinLed.set();
 	DCMotor::configurePWM();
 	millis_init();
 	stepperRight.setTimeInterval(10);
+	setUartWatchdog();
 }
 void MainApplication::exec1000Ms()
 {
@@ -303,7 +307,11 @@ void MainApplication::parseUART()
 	}
 }
 
-
+void MainApplication::watchdogRoutine()
+{
+	motorLeft.stop();
+	motorRight.stop();
+}
 
 uint8_t MainApplication::exec()
 {
@@ -317,4 +325,9 @@ uint8_t MainApplication::exec()
 		stepperRight.stepUntil();
 	}
 	return 1;
+}
+
+ISR(WDT_vect)
+{
+	app.watchdogRoutine();
 }

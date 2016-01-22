@@ -10,6 +10,7 @@
 #include "Pin.h"
 #include <string.h>
 #include <stdio.h>
+#include <avr/wdt.h>
 
 constexpr uint32_t UART_CLOCK = 16000000;
 constexpr uint8_t receiverBufferSize = 200;
@@ -39,6 +40,9 @@ public:
 };
 
 extern Uart uart;
+
+void setUartWatchdog();
+
 
 
 #endif /* UART_H_ */

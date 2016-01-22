@@ -87,13 +87,10 @@ public:
 public:
 	MainApplication();
 
+	void watchdogRoutine();
 	uint8_t exec();
 };
 
-template<typename T>
-inline T convertToInteger(char *data)
-{
-	return atol(data);
-}
+extern MainApplication app;
 
 #endif /* MAINAPPLICATION_H_ */

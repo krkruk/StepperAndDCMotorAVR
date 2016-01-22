@@ -7,10 +7,7 @@
 
 #include "MainApplication.h"
 
-
-
 int main()
 {
-	MainApplication app;
 	return app.exec();
 }

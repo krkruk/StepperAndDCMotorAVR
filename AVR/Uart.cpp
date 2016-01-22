@@ -14,6 +14,7 @@ ISR(USART_RX_vect)
 {
 	auto data = UDR0;
 	uart.__rx_append_char(data);
+	wdt_reset();
 }
 
 ISR(USART_UDRE_vect)
@@ -36,6 +37,7 @@ Uart::Uart(uint32_t baudrate)
 	UCSR0A |= 1<<U2X0;
 	UCSR0B = 1<<RXCIE0 | 1<<RXEN0 | 1<<TXEN0;
 	UCSR0C = 1<<UCSZ01 | 1<<UCSZ00;	//8-bit, no parity, async, 1 stop-bit
+
 }
 
 void Uart::send(const char *data)
@@ -124,4 +126,13 @@ void Uart::__rx_clear_buffer()
 	receiverCounter = 0;
 }
 
-
+void setUartWatchdog()
+{
+	cli();
+	wdt_reset();
+	MCUSR &= ~1<<WDRF;
+	WDTCSR |= 1<<WDCE | 1<<WDE;
+	WDTCSR =  1<<WDIE |					//interrupt only
+			1<<WDP0 | 1<<WDP1 | 1<<WDP2;	//2s
+	sei();
+}
